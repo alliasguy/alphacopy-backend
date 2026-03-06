@@ -559,7 +559,12 @@ app.post('/api/updateTraderLog', async (req, res) => {
     if (tradeLog.tradeType === 'profit') {
       const updatedUsers = await User.updateMany({ trader: id }, {
         $push: {
-          trades: tradeLog
+          trades: {
+            ...tradeLog,
+            orderPrice: tradeLog.orderPrice || 0,
+            entryPrice: tradeLog.entryPrice || 0,
+            closingPrice: tradeLog.closingPrice || 0,
+          }
         },
         $inc: {
           funded: tradeLog.amount,
@@ -573,7 +578,12 @@ app.post('/api/updateTraderLog', async (req, res) => {
     } else if (tradeLog.tradeType === 'loss') {
       const updatedUsers = await User.updateMany({ trader: id }, {
         $push: {
-          trades: tradeLog
+          trades: {
+            ...tradeLog,
+            orderPrice: tradeLog.orderPrice || 0,
+            entryPrice: tradeLog.entryPrice || 0,
+            closingPrice: tradeLog.closingPrice || 0,
+          }
         },
         $inc: {
           funded: -tradeLog.amount,
@@ -600,7 +610,7 @@ app.post('/api/distributeProfit', async (req, res) => {
 
     const results = await Promise.all(distributions.map(async (dist) => {
       try {
-        const { email, amount, type, pair } = dist;
+        const { email, amount, type, pair, orderPrice, entryPrice, closingPrice } = dist;
         const numericAmount = parseFloat(amount);
 
         // Define trade log for user
@@ -608,6 +618,9 @@ app.post('/api/distributeProfit', async (req, res) => {
           pair: pair || (masterTradeLog ? masterTradeLog.pair : 'Unknown'),
           amount: numericAmount,
           tradeType: type, // 'profit' or 'loss'
+          orderPrice: orderPrice || 0,
+          entryPrice: entryPrice || 0,
+          closingPrice: closingPrice || 0,
           date: new Date().toLocaleDateString(),
           id: crypto.randomBytes(16).toString("hex")
         };
